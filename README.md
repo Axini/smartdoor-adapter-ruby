@@ -1,5 +1,3 @@
-// Copyright 2023 Axini B.V. https://www.axini.com, see: LICENSE.txt.
-
 # Description
 
 This project defines a Ruby implementation of a plugin adapter (PA) for Axini's standalone SmartDoor application. It connects the Axini Modeling Platform (AMP) to the standalone SmartDoor application. 
@@ -7,6 +5,8 @@ This project defines a Ruby implementation of a plugin adapter (PA) for Axini's 
 Like the plugin adapters in other programming languages, this Ruby implementation of the SmartDoor adapter follows Axini's preferred plugin adapter architecture. We removed any in-house dependencies and tried to limit the dependencies on other external gems (e.g., google-protobuf, websocket-driver, etc.). Moreover, we tried to keep the organization and architecture of the adapter as close as possible to existing SmartDoor adapters that we developed in other programming languages (i.e., Java and C++).
 
 This is an initial version of the implementation; it is still work in progress.
+
+The software is distributed under the MIT license, see LICENSE.txt.
 
 
 # External libraries
@@ -48,8 +48,3 @@ Be sure to update the name, url and token variables, though.
 - Error handling should be improved upon.
 - Virtual stimuli to inject bad weather behavior could be added.
 - (Unit) tests are missing.
-
-
-# License
-
-The source code of the adapter is distributed under the BSD License. See LICENSE.txt.
