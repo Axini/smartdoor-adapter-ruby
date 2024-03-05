@@ -13,7 +13,7 @@ require 'logging'
 # Alternatively, we could post-process the generated _pb.rb files.
 
 $LOAD_PATH.push File.join(File.expand_path(__dir__), './smartdoor-ruby/pa_protobuf')
-require 'announcements_pb'
+require 'announcement_pb'
 require 'label_pb'
 require 'configuration_pb'
 require 'message_pb'
