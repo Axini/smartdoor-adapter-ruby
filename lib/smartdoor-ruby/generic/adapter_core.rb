@@ -21,15 +21,23 @@ class AdapterCore
     ERROR         = :error
   end
 
+  # Constructor.
   def initialize(name, broker_connection, handler)
     @name = name
     @broker_connection = broker_connection
     @handler = handler
     @state = State::DISCONNECTED
+
+    @qthread_to_amp =
+        QThread.new { |item| send_message_to_amp(item) }
+    @qthread_handle_message =
+        QThread.new { |item| parse_and_handle_message(item) }
   end
 
   # Start the adapter core, which connects to AMP.
   def start
+    clear_qthread_queues
+
     case @state
     when State::DISCONNECTED
       logger.info "Connecting to AMP's broker."
@@ -111,8 +119,9 @@ class AdapterCore
     when State::READY
       # We do not check that the label is indeed a stimulus
       logger.info 'Forwarding label to Handler object.'
-      physical_label = @handler.stimulate(label)
-      send_stimulus(label, physical_label, Time.now, label.correlation_id)
+      @handler.stimulate(label)
+      # physical_label = @handler.stimulate(label)
+      # send_stimulus(label, physical_label, Time.now, label.correlation_id)
     else
       message = 'Label received from AMP while not ready.'
       logger.info(message)
@@ -143,9 +152,67 @@ class AdapterCore
     @broker_connection.close(reason: message, code: 1000) # 1000 is normal closure
   end
 
+  def handle_message(data)
+    logger.debug "Adding message from AMP to the queue to be handled"
+    @qthread_handle_message << data
+  end
+
+  # Send response to AMP (callback for Handler).
+  # We do not check whether the label is actual a response.
+  # @param [String] physical_label as observed at the SUT
+  # @param [Time] timestamp when the response was observed
+  def send_response(label, physical_label, timestamp)
+    logger.info "Sending response to AMP: #{label.label}."
+    label = label.dup
+    label.physical_label = physical_label if physical_label
+    label.timestamp = time_to_nsec(timestamp)
+    queue_message_to_amp(PluginAdapter::Api::Message.new(label: label))
+  end
+
+  # Send Ready message to AMP (callback for Handler).
+  def send_ready
+    logger.info "Sending 'Ready' to AMP."
+    ready = PluginAdapter::Api::Message::Ready.new
+    queue_message_to_amp(PluginAdapter::Api::Message.new(ready: ready))
+    @state = State::READY
+  end
+
+  # Send Error message to AMP (also callback for Handler).
+  # - close the connection with AMP
+  def send_error(message)
+    logger.info "Sending 'Error' to AMP and closing the connection."
+    error = PluginAdapter::Api::Message::Error.new(message: message)
+    queue_message_to_amp(PluginAdapter::Api::Message.new(error: error))
+    @broker_connection.close(reason: message, code: 1000) # 1000 is normal closure
+  end
+
+  def send_announcement(name, labels, configuration)
+    announcement = PluginAdapter::Api::Announcement.new(
+      name: name,
+      labels: labels,
+      configuration: configuration
+    )
+    queue_message_to_amp(PluginAdapter::Api::Message.new(announcement: announcement))
+  end
+
+  # Send stimulus (back) to AMP.
+  # We do not check that the label is indeed a stimulus.
+  # @param [PluginAdapter::Api:Label] stimulus to send back to AMP
+  # @param [String] physical_label as offered to the SUT
+  # @param [Time] timestamp when the stimulus was offered to the SUT
+  def send_stimulus_confirmation(label, physical_label, timestamp)
+    logger.info "Sending stimulus (back) to AMP: #{label.label}."
+    label = label.dup
+    label.physical_label = physical_label if physical_label
+    label.timestamp = time_to_nsec(timestamp)
+    queue_message_to_amp(PluginAdapter::Api::Message.new(label: label))
+  end
+
+  private
+
   # Parse the binary message from AMP to a Protobuf message and call the
   # appropriate method of this AdapterCore.
-  def handle_message(data)
+  def parse_and_handle_message(data)
     logger.info 'handle_message'
 
     payload = data.pack('c*')
@@ -174,58 +241,24 @@ class AdapterCore
     end
   end
 
-  # Send response to AMP (callback for Handler).
-  # We do not check whether the label is actual a response.
-  def send_response(label, physical_label, timestamp)
-    logger.info "Sending response to AMP: #{label.label}."
-    label = label.dup
-    label.physical_label = physical_label if physical_label
-    label.timestamp = time_to_nsec(timestamp)
-    send_message(PluginAdapter::Api::Message.new(label: label))
+  # Clear both QThread queues.
+  def clear_qthread_queues
+    logger.debug 'Clearing queues with pending messages'
+    @qthread_to_amp.clear_queue
+    @qthread_handle_message.clear_queue
   end
 
-  # Send Ready message to AMP (callback for Handler).
-  def send_ready
-    logger.info "Sending 'Ready' to AMP."
-    ready = PluginAdapter::Api::Message::Ready.new
-    send_message(PluginAdapter::Api::Message.new(ready: ready))
-    @state = State::READY
-  end
-
-  # Send Error message to AMP (also callback for Handler).
-  # - close the connection with AMP
-  def send_error(message)
-    logger.info "Sending 'Error' to AMP and closing the connection."
-    error = PluginAdapter::Api::Message::Error.new(message: message)
-    send_message(PluginAdapter::Api::Message.new(error: error))
-    @broker_connection.close(reason: message, code: 1000) # 1000 is normal closure
-  end
-
-  def send_announcement(name, labels, configuration)
-    announcement = PluginAdapter::Api::Announcement.new(
-      name: name,
-      labels: labels,
-      configuration: configuration
-    )
-    send_message(PluginAdapter::Api::Message.new(announcement: announcement))
-  end
-
-  private
-
-  # Send stimulus (back) to AMP.
-  # We do not check that the label is indeed a stimulus.
-  def send_stimulus(label, physical_label, timestamp, correlation_id)
-    logger.info "Sending stimulus (back) to AMP: #{label.label}."
-    label = label.dup
-    label.physical_label = physical_label if physical_label
-    label.timestamp = time_to_nsec(timestamp)
-    label.correlation_id = correlation_id
-    send_message(PluginAdapter::Api::Message.new(label: label))
-  end
-
-  # Sends the given `message` to the broker.
+  # Add message to the queue to be sent to AMP.
   # @param [PluginAdapter::Api::Message] message
-  def send_message(message)
+  def queue_message_to_amp(message)
+    logger.debug 'Adding message to the queue to AMP'
+    @qthread_to_amp << message
+  end
+
+  # Send Protobuf message to AMP.
+  # @param [PluginAdapter::Api::Message] message
+  def send_message_to_amp(message)
+    logger.debug 'Sending message AMP'
     @broker_connection.binary(message.to_proto.bytes)
   end
 

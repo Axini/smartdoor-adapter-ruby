@@ -12,7 +12,7 @@ require 'logging'
 # other generated files. We modify the LOAD_PATH to make these requires work.
 # Alternatively, we could post-process the generated _pb.rb files.
 
-$LOAD_PATH.push File.join(File.expand_path(__dir__), './smartdoor-ruby/pa_protobuf')
+$LOAD_PATH.push File.join(File.expand_path(__dir__), './smartdoor-ruby/generic/pa_protobuf')
 require 'announcement_pb'
 require 'label_pb'
 require 'configuration_pb'
@@ -43,10 +43,17 @@ end
 # ----- source files
 
 %w[
-  adapter
   adapter_core
   broker_connection
   handler
+  qthread
+].each { |file| require_relative File.join('smartdoor-ruby/generic', file) }
+
+%w[
   smartdoor_connection
   smartdoor_handler
+].each { |file| require_relative File.join('smartdoor-ruby/smartdoor', file) }
+
+%w[
+  adapter
 ].each { |file| require_relative File.join('smartdoor-ruby', file) }

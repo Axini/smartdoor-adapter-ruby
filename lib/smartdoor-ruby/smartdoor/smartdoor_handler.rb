@@ -44,10 +44,14 @@ class SmartDoorHandler < Handler
 
   # @see super
   def stimulate(label)
-    logger.info "Sending stimulus to the SUT: #{label.label}"
+    logger.info "Executing stimulus at the SUT: #{label.label}"
     sut_message = label_to_sut_message(label)
+
+    # send confirmation of stimulus back to AMP
+    @adapter_core.send_stimulus_confirmation(label, sut_message, Time.now)
+
+    # inject stimulus into SUT
     @connection.send(sut_message)
-    sut_message
   end
 
   STIMULI = %w[open close].freeze
@@ -89,7 +93,7 @@ class SmartDoorHandler < Handler
   end
 
   def send_response_to_amp(message)
-    return unless message != 'RESET_PERFORMED'
+    return if message == 'RESET_PERFORMED' # not a real response
 
     label = sut_message_to_label(message)
     timestamp = Time.now
