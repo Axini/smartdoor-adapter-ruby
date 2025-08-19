@@ -62,7 +62,7 @@ class BrokerConnection
     @driver.close(reason, code)
   end
 
-  def binary(bytes)
+  def write(bytes)
     raise 'No connection to websocket (yet). Is the adapter connected to AMP?' if @driver.nil?
 
     @driver.binary(bytes)
