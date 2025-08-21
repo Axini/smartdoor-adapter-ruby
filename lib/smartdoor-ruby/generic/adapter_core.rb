@@ -10,7 +10,6 @@
 # One can see the AdapterCore as the generic part of the adapter and the
 # Handler as the implementation specific part of the adapter.
 class AdapterCore
-
   # Possible states of the Adapter(Core).
   module State
     DISCONNECTED  = :disconnected
@@ -29,9 +28,9 @@ class AdapterCore
     @state = State::DISCONNECTED
 
     @qthread_to_amp =
-        QThread.new { |item| send_message_to_amp(item) }
+      QThread.new { |item| send_message_to_amp(item) }
     @qthread_handle_message =
-        QThread.new { |item| parse_and_handle_message(item) }
+      QThread.new { |item| parse_and_handle_message(item) }
   end
 
   # Start the adapter core, which connects to AMP.
@@ -153,7 +152,7 @@ class AdapterCore
   end
 
   def handle_message(data)
-    logger.debug "Adding message from AMP to the queue to be handled"
+    logger.debug 'Adding message from AMP to the queue to be handled'
     @qthread_handle_message << data
   end
 
@@ -212,10 +211,9 @@ class AdapterCore
 
   # Parse the binary message from AMP to a Protobuf message and call the
   # appropriate method of this AdapterCore.
-  def parse_and_handle_message(data)
+  def parse_and_handle_message(payload)
     logger.info 'handle_message'
 
-    payload = data.pack('c*')
     message = PluginAdapter::Api::Message.decode(payload)
 
     case message.type
@@ -235,7 +233,7 @@ class AdapterCore
       on_error(message.error.message)
 
     else
-      message = "Received message with type #{message.type} which "\
+      message = "Received message with type #{message.type} which " \
                 'is *not* supported.'
       logger.error(message)
     end
@@ -259,7 +257,7 @@ class AdapterCore
   # @param [PluginAdapter::Api::Message] message
   def send_message_to_amp(message)
     logger.debug 'Sending message AMP'
-    @broker_connection.binary(message.to_proto.bytes)
+    @broker_connection.write(message.to_proto)
   end
 
   # Number of nanoseconds in a second

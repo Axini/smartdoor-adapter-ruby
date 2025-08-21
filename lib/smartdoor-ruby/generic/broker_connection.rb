@@ -6,6 +6,7 @@
 class BrokerConnection
   def initialize(url, token)
     @url          = url
+    @uri          = URI.parse(url)
     @token        = token
     @adapter_core = nil
     @socket       = nil
@@ -18,8 +19,7 @@ class BrokerConnection
 
   # Connect to AMP's plugin adapter broker and register WebSocket callbacks.
   def connect
-    uri = URI.parse(@url)
-    @socket = TCPSocket.new(uri.host, uri.port)
+    @socket = TCPSocket.new(@uri.host, @uri.port)
     @socket = upgrade_to_ssl(@socket)
     @socket.url = @url
 
@@ -62,7 +62,7 @@ class BrokerConnection
     @driver.close(reason, code)
   end
 
-  def binary(bytes)
+  def write(bytes)
     raise 'No connection to websocket (yet). Is the adapter connected to AMP?' if @driver.nil?
 
     @driver.binary(bytes)
@@ -73,6 +73,7 @@ class BrokerConnection
   def upgrade_to_ssl(socket)
     ssl_socket = OpenSSL::SSL::SSLSocket.new(socket)
     ssl_socket.sync_close = true # also close the wrapped socket
+    ssl_socket.hostname = @uri.host
     ssl_socket.connect
     ssl_socket
   end
