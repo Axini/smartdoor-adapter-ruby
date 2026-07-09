@@ -20,7 +20,7 @@ class BrokerConnection
   # Connect to AMP's plugin adapter broker and register WebSocket callbacks.
   def connect
     @socket = TCPSocket.new(@uri.host, @uri.port)
-    @socket = upgrade_to_ssl(@socket)
+    @socket = upgrade_to_ssl(@socket) if @uri.scheme == 'wss'
     @socket.url = @url
 
     @driver = WebSocket::Driver.client(@socket)
