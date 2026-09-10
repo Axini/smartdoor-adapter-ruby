@@ -2,7 +2,7 @@ AllCops:
   NewCops: enable
   Exclude:
     # generated Protobuf files
-    - lib/smartdoor-ruby/pa_protobuf/*.rb
+    - lib/smartdoor-ruby/generic/pa_protobuf/*.rb
 
 Naming/FileName:
   Exclude:
@@ -10,8 +10,8 @@ Naming/FileName:
 
 Metrics/ClassLength:
   Exclude:
-    - lib/smartdoor-ruby/adapter_core.rb
-    - lib/smartdoor-ruby/smartdoor_handler.rb
+    - lib/smartdoor-ruby/generic/adapter_core.rb
+    - lib/smartdoor-ruby/smartdoor/smartdoor_handler.rb
 
 Metrics/MethodLength:
   Enabled: false

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+# Convenience script to start the SmartDoor adapter.
+
+HOSTNAME=$(hostname)
+NAME=smartdoor-adapter-ruby@${HOSTNAME}
+URL=
+TOKEN=
+
+bundle exec ruby ./bin/adapter.rb $NAME $URL $TOKEN

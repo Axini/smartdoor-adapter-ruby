@@ -2,12 +2,11 @@
 
 This project defines a *Ruby* implementation of a plugin adapter (PA) for Axini's standalone SmartDoor application. It connects the Axini Modeling Platform (AMP) to the standalone SmartDoor application.
 
-See https://github/axini and the plugin-adapter-protocol repository for some general information on Axini's plugin adapter protocol. Axini's training on "plugin adapters" provides additional and more detailed information.
+See https://github.com/axini and the plugin-adapter-protocol repository for some general information on Axini's plugin adapter protocol.
 
 Like the plugin adapters in other programming languages, this Ruby implementation of the SmartDoor adapter follows Axini's preferred plugin adapter architecture. We removed any in-house dependencies and tried to limit the dependencies on other external gems (e.g., google-protobuf, websocket-driver, etc.). Moreover, we tried to keep the organization and architecture of the adapter as close as possible to existing plugin adapters for SmartDoor that we developed in other programming languages (i.e., Java, C++ and Python).
 
 The software is distributed under the MIT license, see LICENSE.txt.
-
 
 # External libraries
 
@@ -24,16 +23,15 @@ The directory `./lib/smartdoor-ruby/proto` contains the Protobuf .proto files de
 We use `protoc` version 3 (most recently 3.21.12) and the `google-protobuf` gem version 3.25.
 If your local version of `protoc` is more modern, make sure to regenerate the `pa_protobuf` files with the following command:
 
+```bash
+protoc -I ./lib/smartdoor-ruby/generic/proto --ruby_out=./lib/smartdoor-ruby/generic/pa_protobuf ./lib/smartdoor-ruby/generic/proto/*.proto
 ```
-	protoc -I ./lib/smartdoor-ruby/generic/proto --ruby_out=./lib/smartdoor-ruby/generic/pa_protobuf ./lib/smartdoor-ruby/generic/proto/*.proto
-```
-
 
 Alternatively, a makefile has been provided to facilitate the generation of the proto files.
 Use it with the following command:
 
-```
-  make pa_protobuf
+```bash
+make pa_protobuf
 ```
 
 ## Faye Websocket Driver
@@ -50,12 +48,22 @@ Logging is a flexible logging library for use in Ruby programs based on the desi
 # Adapter
 
 The dependencies of the adapter can be installed using bundler:
-`$ bundle install`
+
+```bash
+ bundle install
+```
 
 The adapter itself can then be executed with:
-`$ bundle exec ruby ./bin/run_adapter.rb`
-Be sure to update the name, url and token variables, though.
 
+```bash
+bundle exec ruby ./bin/adapter.rb <name> <url> <token>
+```
+
+Alternatively use the convenience script:
+
+```bash
+./adapter
+```
 
 # Some notes on the implementation
 

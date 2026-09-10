@@ -1,6 +1,8 @@
 # Copyright 2023 Axini B.V. https://www.axini.com, see: LICENSE.txt.
 # frozen_string_literal: true
 
+require 'socket'
+
 # The BrokerConnection deals with the WebSocket connection with AMP's broker.
 # The BrokerConnection calls back on the AdapterCore.
 class BrokerConnection
